@@ -18,17 +18,13 @@
        this.renderDOM();
 
         this.picViewArea = this.popupWin.find('div.lightbox-pic-view');//图片预览区域
-        this.popupPic = this.popupWin.find('img.lightbox-iamge');
+        this.popupPic = this.popupWin.find('img.lightbox-image');
         this.picCaptionArea = this.popupWin.find('div.lightbox-pic-caption');//图片描述区域
         this.nextBtn = this.popupWin.find('span.lightbox-next-btn');//按钮
         this.prevBtn = this.popupWin.find('span.lightbox-prev-btn');
         this.captionText = this.popupWin.find('p.lightbox-pic-desc'); //图片描述
         this.currentIndex = this.popupWin.find('span.lightbox-of-index'); //图片当前索引
         this.closeBtn = this.popupWin.find('span.lightbox-close-btn');this.nextBtn = this.popupWin.find('span.lightbox-next-btn');
-        this.prevBtn = this.popupWin.find('span.lightbox-prev-btn');
-        this.captionText = this.popupWin.find('p.lightbox-pic-desc'); //图片描述
-        this.currentIndex = this.popupWin.find('span.lightbox-of-index'); //图片当前索引
-        this.closeBtn = this.popupWin.find('span.lightbox-close-btn');
 
         //准备开发事件委托，获取组数据
         this.groupName = null;
@@ -48,10 +44,157 @@
             self.initPopup($(this));
 
         });
+        //关闭弹出
+        this.popupMask.click(function () {
+            $(this).fadeOut();
+            self.popupWin.fadeOut();
+        });
+        this.closeBtn.click(function () {
+            self.popupMask.fadeOut();
+            self.popupWin.fadeOut();
+        });
+        //指定上下切换按钮事件
+        this.flag = true;
+        this.prevBtn.hover(function () {
+           // alert(1);
+            if(!$(this).hasClass("disabled") && self.groupData.length>1)
+            {
+                $(this).addClass("lightbox-prev-btn-show");
+            }
+        },function () {
+            if(!$(this).hasClass("disabled")&&self.groupData.length>1) {
+                $(this).removeClass("lightbox-prev-btn-show");
+            }
+        }).click(function (e) {
+            if(!$(this).hasClass("disabled" && self.flag)){
+                self.flag = false;
+                e.stopPropagation();
+                self.goto("prev");
+            }
+        });
+        this.nextBtn.hover(function () {
+            if(!$(this).hasClass("disabled") && self.groupData.length>1){
+
+                $(this).addClass("lightbox-next-btn-show");
+            }
+        },function () {
+            if(!$(this).hasClass("disabled")&&self.groupData.length>1) {
+                $(this).removeClass("lightbox-next-btn-show");
+            }
+        }).click(function (e) {
+            if(!$(this).hasClass("disabled") && self.flag){
+                self.flag = false;
+                e.stopPropagation();
+                self.goto("next");
+            }
+
+
+        });
+//绑定窗口调整事件
+        var timer = null;
+        $(window).resize(function () {
+            window.clearTimeout(timer);
+            timer = window.setTimeout(function () {
+                self.loadPicSize(self.groupData[self.index].src);
+            },500);
+
+        }).keyup(function (e) {
+            var keyValue = e.which;
+            console.log(keyValue);
+            if (keyValue == 38 || keyValue == 37) {
+                self.prevBtn.click();
+            }
+            else if (keyValue == 40 || keyValue == 39)
+            {
+                self.nextBtn.click();
+            }
+            }
+        )
+
     };
 
     LightBox.prototype = {
+        goto:function (dir) {
+            if(dir == "next"){
+                this.index++;
+                if(this.index>=this.groupData.length-1){
+                    this.nextBtn.addClass("disabled").removeClass("lightbox-next-btn-show");
+                }
+                if(this.index != 0){
+                    this.prevBtn.removeClass("disabled");
+                }
+                var src = this.groupData[this.index].src;
+                this.loadPicSize(src);
+            }
+            else if(dir == "prev"){
+                this.index--;
+                if(this.index<=0)
+                {
+                    this.prevBtn.addClass("disabled").removeClass("lightbox-prev-btn-show");
+                }
+                if(this.index != this.groupData.length-1)
+                {
+                    this.nextBtn.removeClass("disabled");
+                    var src = this.groupData[this.index].src;
+                    this.loadPicSize(src);
+                }
+            }
+        },
+        loadPicSize:function (sourceSrc) {
+            var self = this;
+            self.popupPic.css({
+                width:"auto",
+                height:"auto"
+            }).hide();
+            this.picCaptionArea.hide();
+            this.preLoadImg(sourceSrc, function() {
+                self.popupPic.attr('src', sourceSrc);
+                var picWidth = self.popupPic.width();
+                var picHeight = self.popupPic.height();
+
+                self.changePic(picWidth, picHeight);
+            });
+        },
+        changePic:function (width,height) {
+            var self = this,
+                winWidth = $(window).width(),
+                winHeight = $(window).height();
+            //如果图片宽高大于浏览器视口宽高
+
+            var scale = Math.min(winWidth/(width+10),winHeight/(height+10),1);//边框为10
+            width = width * scale;
+            height = height * scale;
+            this.picViewArea.animate({
+                width:width-10,
+                height:height-10
+            });
+            this.popupWin.animate({
+                width:width,
+                height:height,
+                marginLeft:-(width/2),
+                top:(winHeight-height)/2
+            },function () {
+                self.popupPic.css({
+                    width:width-10,
+                    height:height-10
+                }).fadeIn();
+                self.picCaptionArea.fadeIn();
+                self.flag = true;
+            });
+            //设置描述文字和索引
+            this.captionText.text(this.groupData[this.index].caption);
+            this.currentIndex.text("当前索引： " + (this.index+1) + "  of  " + this.groupData.length)
+        },
+        preLoadImg:function (src,callback) {
+            var img = new Image();
+            img.onload = function () {
+                callback();
+            }
+            img.src = src;
+
+        },
         showMaskAndPopup:function (sourceSrc,currentId) {
+
             var self = this;
 
             this.popupPic.hide();
@@ -76,8 +219,42 @@
                 top:(winHeight-viewHeight)/2
             },function () {
                 //加载图片
+                self.loadPicSize(sourceSrc);
             });
 
+            //根据当前点击元素ID获取在当前组别的索引
+            this.index = this.getIndexOf(currentId);
+
+            var groupDataLength = this.groupData.length;
+
+            if(groupDataLength>1){
+                if(this.index == 0){
+                    this.prevBtn.addClass("disabled");
+                    this.nextBtn.removeClass("disabled");
+
+                }else if(this.index == groupDataLength - 1)
+                {
+                    this.nextBtn.addClass("disabled");
+                    this.prevBtn.removeClass("disabled");
+                }else{
+                    this.nextBtn.removeClass("disabled");
+                    this.prevBtn.removeClass("disabled");
+                }
+
+            }
+
+        },
+        getIndexOf:function (currentId) {
+
+            var index = 0;
+            $(this.groupData).each(function (i) {
+               index = i;
+                if(this.id === currentId){
+                    return false;
+                }
+            });
+
+            return index;
         },
         initPopup:function (currentObj) {
 
@@ -105,9 +282,9 @@ console.log(self.groupData);
         },
         renderDOM:function () {
             var strDOM = '<div class="lightbox-pic-view">'+
-                        '<span class="lightbox-btn lightbox-prev-btn"><</span>'+
-                        ' <img src="" alt="" class="lightbox-image" width="100%">'+
-                        ' <span class="lightbox-btn lightbox-next-btn">></span>'+
+                        '<span class="lightbox-btn lightbox-prev-btn"></span>'+
+                        ' <img src="" alt="" class="lightbox-image">'+
+                        ' <span class="lightbox-btn lightbox-next-btn"></span>'+
                         '</div>'+
                         ' <div class="lightbox-pic-caption">'+
                         '<div class="lightbox caption-area">'+

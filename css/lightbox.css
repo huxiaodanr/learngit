@@ -10,6 +10,9 @@ body{font:12px/1.5 'microsoft yahei',tahoma,arial,'Hiragino Sans GB',宋体,sans
 .text-ellipsis{white-space: nowrap;/*设置不换行*/text-overflow: ellipsis;overflow: hidden;}
 /*lightbox图片画廊样式*/
 /*遮罩层*/
+.disabled{
+    display: none;
+}
 #G-lightbox-mask{
     position: fixed;
     left:0;
@@ -32,13 +35,13 @@ body{font:12px/1.5 'microsoft yahei',tahoma,arial,'Hiragino Sans GB',宋体,sans
     z-index: 10001;
     display: none;
 }
-#g-lightbox-popup .lightbox-pic-view{
+#G-lightbox-popup .lightbox-pic-view{
     position: relative;
     border:5px solid #fff;
     border-radius:3px;
     overflow: hidden;
     background-color: #fff;
-    background: url(../icon/loading.gif) no-repeat center center;
+    background: #fff url(../icon/loading.gif) no-repeat center center;
 }
 #G-lightbox-popup .lightbox-pic-view .lightbox-btn{
     position: absolute;
